@@ -6,6 +6,9 @@ import numpy as np
 
 
 class ILPMatrix:
+    """
+    Prepare an input matrix for integer linear programming solver
+    """
     def __init__(self, mat):
         self.g_key = list(gateway_coordinates.keys())
         self.o_key = list(objects_coordinates.keys())
@@ -48,11 +51,18 @@ class ILPMatrix:
         w = ['w' + str(i) for i in range(w_num)]
 
         return [x, y, w]
+
     def make_int_constraints(self, name):
         column, = np.where(np.in1d(self.f.columns.values, name))
         return [i + 1 for i in column]
 
     def make_objective(self, col, w):
+        """
+        make objective function
+        :param col: column name vector
+        :param w: mame of w parameter vector
+        :return: self.f
+        """
         data = np.zeros([1, len(col)]).astype(int)
         self.f = pd.DataFrame(data, columns=col)
         column, = np.where(np.in1d(self.f.columns.values, w))
@@ -129,6 +139,12 @@ class ILPMatrix:
             self.make_eq_for_y(i, 'y' + str(i), self.ub_array, coef)
 
     def create_matrix(self):
+        """
+
+        :return: equality matrix, linear equality constraint vector;
+         inequality matrix, linear inequality constraint vector;
+         upper bounds vector; lower bounds vector
+        """
         row_num = len(self.g_key) + len(self.o_key) + len(self.s_key)
         [x_name, y_name, w_name] = self.create_value_name(row_num)
         col_name = x_name + y_name + w_name
