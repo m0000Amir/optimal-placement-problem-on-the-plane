@@ -1,5 +1,4 @@
-from itertools import product
-from itertools import permutations
+from itertools import product, permutations, compress
 import pandas as pd
 import numpy as np
 
@@ -8,11 +7,10 @@ class ILPMatrix:
     """
     Prepare an input matrix for integer linear programming solver
     """
-    def __init__(self, graph, s_num, g_lim, o_lim, s_lim):
-        self.s_num = s_num
-        self.v = {**g_lim, **o_lim, **s_lim}
+    def __init__(self, graph):
         self.graph = graph
         self.mat = graph.adj_matrix.toarray()
+        # Input matrices for ILP problem
         self.f = None
         self.int_constraints = None
         self.lower_bounds = None
@@ -21,6 +19,7 @@ class ILPMatrix:
         self.eq_b = None
         self.ineq_array = None
         self.ineq_b = None
+        self._splacenum = int(len(self.graph.s_p) / len(self.graph.cov))
 
     @staticmethod
     def create_x_name(edge_name):
@@ -75,7 +74,7 @@ class ILPMatrix:
         column, = np.where(np.in1d(self.eq_array.columns.values, mat_name))
         self.eq_array.iloc[i, column] = 1
         self.eq_array.ix[i, 'w' + str(i)] = 1
-        self.eq_b[i] = sum(self.v[j] for j in self.graph.o_key)
+        self.eq_b[i] = sum(self.graph.o_lim.values())
 
     def make_for_o(self, i):
         col_mat, = np.where(self.mat[i, :] == 1)
@@ -84,7 +83,7 @@ class ILPMatrix:
         column, = np.where(np.in1d(self.eq_array.columns.values, mat_name))
         self.eq_array.iloc[i, column] = 1
         self.eq_array.ix[i, 'w' + str(i)] = 1
-        self.eq_b[i] = self.v[i]
+        self.eq_b[i] = self.graph.o_lim[i]
 
     def add_input_edge_s(self, i, array):
         row_mat, = np.where(self.mat[:, i] == 1)
@@ -114,7 +113,29 @@ class ILPMatrix:
         column, = np.where(np.in1d(array.columns.values, y))
         array.iloc[i, column] = coefficient
 
-    def make_equality(self, row, y):
+    # def make_eq_for_var_param(self, row, y):
+    #     step = int(len(self.graph.s_p) / len(self.graph.cov))
+    #     for i in range(0, step):
+    #         selectors = [0] * len(self.graph.s_p)
+    #         [selectors.insert(i, 1) for i in range(i, len(self.graph.s_p), 3)]
+    #         y_name = list(compress(y, selectors))
+    #
+    #         self.make_eq_for_y(row + i, y_name, self.ineq_array)
+    #         self.ineq_b[row + i] = 1
+
+    def make_eq_for_var_param(self, row, y):
+        for i in range(0, len(self.graph.cov)):
+            y_name = [y[j+i*self._splacenum] for j in range(0,self._splacenum)]
+
+            self.make_eq_for_y(row + i, y_name, self.ineq_array)
+            self.ineq_b[row + i] = 1
+
+    def make_equality(self, row, col, y):
+
+        data_eq = np.zeros([row + 1, len(col)]).astype(int)
+        self.eq_b = np.zeros(row + 1)
+        self.eq_array = pd.DataFrame(data_eq, columns=col)
+
         for i in range(row + 1):
             if i in self.graph.g_key:
                 self.make_for_g(i)
@@ -127,24 +148,38 @@ class ILPMatrix:
 
             if i == row:
                 self.make_eq_for_y(i, y, self.eq_array)
-                self.eq_b[i] = self.s_num
+                self.eq_b[i] = len(self.graph.cov)
 
-    def make_inequality(self):
+        # if len(self.graph.cov) is not 1:
+        #     self.make_eq_for_var_param(row, y)
+
+    def make_inequality(self, row, col, y):
+        if len(self.graph.cov) is not 1:
+            # additional conditions for stations with various parameters
+            data_row = (row + len(self.graph.cov))
+        else:
+            data_row = row
+        data_ineq = np.zeros([data_row, len(col)]).astype(int)
+        self.ineq_b = np.zeros(data_row)
+        self.ineq_array = pd.DataFrame(data_ineq, columns=col)
+
         for i in self.graph.s_key:
             self.add_input_edge_s(i, self.ineq_array)
-            coef = -1 * self.v[i]
+            coef = -1 * self.graph.s_lim[i]
             self.make_eq_for_y(i, 'y' + str(i), self.ineq_array, coef)
+        if len(self.graph.cov) is not 1:
+            self.make_eq_for_var_param(row, y)
 
     def create_matrix(self):
         """
         Input matrices of integer linear programming problem
 
         :return: equality matrix, linear equality constraint vector;
-         inequality matrix, linear inequality constraint vector;
+         inequality matrix; linear inequality constraint vector;
          upper bounds vector; lower bounds vector
         """
-        row_num = (len(self.graph.g_key) +
-                   len(self.graph.o_key) +
+
+        row_num = (len(self.graph.g_key) + len(self.graph.o_key) +
                    len(self.graph.s_key))
 
         [x_name, y_name, w_name] = self.create_value_name(row_num)
@@ -153,18 +188,38 @@ class ILPMatrix:
         self.make_objective(col_name, w_name)
         self.int_constraints = self.make_int_constraints(y_name)
 
-        data_eq = np.zeros([row_num + 1, len(col_name)]).astype(int)
-        self.eq_b = np.zeros(row_num + 1)
-        self.eq_array = pd.DataFrame(data_eq, columns=col_name)
+        # data_eq = np.zeros([row_num + 1, len(col_name)]).astype(int)
+        # self.eq_b = np.zeros(row_num + 1)
+        # self.eq_array = pd.DataFrame(data_eq, columns=col_name)
+        # if len(self.graph.cov) is not 1:
+        #     # additional conditions for stations with various parameters
+        #     datasize = (row_num + 1 +
+        #                 int(len(self.graph.s_p) / len(self.graph.cov)))
+        # else:
+        #     datasize = row_num + 1
+        # eq_row_size = row_num + 1
+        self.make_equality(row_num, col_name, y_name)
 
-        self.make_equality(row_num, y_name)
+        # data_ineq = np.zeros([row_num + 1, len(col_name)]).astype(int)
+        # self.ineq_b = np.zeros(row_num + 1)
+        # self.ineq_array = pd.DataFrame(data_ineq, columns=col_name)
+        # if len(self.graph.cov) is not 1:
+        #     # additional conditions for stations with various parameters
+        #     ineq_row_size = (row_num +
+        #                        int(len(self.graph.s_p) / len(self.graph.cov)))
+        # else:
+        #     ineq_row_size = row_num
 
-        data_ineq = np.zeros([row_num + 1, len(col_name)]).astype(int)
-        self.ineq_b = np.zeros(row_num + 1)
-        self.ineq_array = pd.DataFrame(data_ineq, columns=col_name)
+        self.make_inequality(row_num, col_name, y_name)
 
-        self.make_inequality()
+    def get_solution_col_name(self):
+        row_num = (len(self.graph.g_key) + len(self.graph.o_key) +
+                   len(self.graph.s_key))
+        [x_name, y_name, w_name] = self.create_value_name(row_num)
+        column, = np.where(np.in1d(self.f.columns.values, y_name))
 
-
-
-
+        name = ['y' + str(self.graph.s_key[0] + j) + '_s_' + str(i + 1)
+                for i in range(0, len(self.graph.cov))
+                for j in range(0, self._splacenum)]
+        self.f.columns.values[column] = name
+        return name
