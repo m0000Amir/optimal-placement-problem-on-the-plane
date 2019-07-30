@@ -5,7 +5,7 @@ import numpy as np
 
 class ILPMatrix:
     """
-    Prepare an input matrix for integer linear programming solver
+    Prepare an problem matrix for integer linear programming solver
     """
     def __init__(self, graph):
         self.graph = graph
@@ -19,6 +19,9 @@ class ILPMatrix:
         self.eq_b = None
         self.ineq_array = None
         self.ineq_b = None
+        self._bool_num = None
+        # self._row_num = None
+        # self._col_name = None
         self._splacenum = int(len(self.graph.s_p) / len(self.graph.cov))
 
     @staticmethod
@@ -27,9 +30,9 @@ class ILPMatrix:
                 for i in range(len(edge_name))]
 
     def create_edge_name(self):
-        g_k = ''.join(map(str, self.graph.g_key))
-        o_k = ''.join(map(str, self.graph.o_key))
-        s_k = ''.join(map(str, self.graph.s_key))
+        g_k = list(map(str, self.graph.g_key))
+        o_k = list(map(str, self.graph.o_key))
+        s_k = list(map(str, self.graph.s_key))
 
         o_s = [i for i in product(o_k, s_k)]
         s_s = [i for i in permutations(s_k, 2)]
@@ -38,6 +41,11 @@ class ILPMatrix:
         o_s_name = self.create_x_name(o_s)
         s_s_name = self.create_x_name(s_s)
         s_g_name = self.create_x_name(s_g)
+
+        # a = [1, 2, 3, 4]
+        # b = [5, 6, 7, 8, 9, 10]
+        # from itertools import product, permutations, compress
+        # s_g = [i for i in product(a, b)]
 
         return o_s_name + s_s_name + s_g_name
 
@@ -66,6 +74,9 @@ class ILPMatrix:
 
         self.lower_bounds = np.zeros([1, len(col)]).astype(int)
         self.upper_bounds = np.ones([1, len(col)]).astype(int) * np.inf
+        # bool param numbers
+        # y0 + yn + wn
+        self.upper_bounds[0, -1: -self._bool_num - 1: -1] = 1
 
     def make_for_g(self, i):
         row_mat, = np.where(self.mat[:, i] == 1)
@@ -125,7 +136,7 @@ class ILPMatrix:
 
     def make_eq_for_var_param(self, row, y):
         for i in range(0, len(self.graph.cov)):
-            y_name = [y[j+i*self._splacenum] for j in range(0,self._splacenum)]
+            y_name = [y[j+i*self._splacenum] for j in range(0, self._splacenum)]
 
             self.make_eq_for_y(row + i, y_name, self.ineq_array)
             self.ineq_b[row + i] = 1
@@ -148,7 +159,10 @@ class ILPMatrix:
 
             if i == row:
                 self.make_eq_for_y(i, y, self.eq_array)
-                self.eq_b[i] = len(self.graph.cov)
+                if len(self.graph.cov) is 1:
+                    self.eq_b[i] = len(self.graph.coverage)
+                else:
+                    self.eq_b[i] = len(self.graph.cov)
 
         # if len(self.graph.cov) is not 1:
         #     self.make_eq_for_var_param(row, y)
@@ -185,7 +199,17 @@ class ILPMatrix:
         [x_name, y_name, w_name] = self.create_value_name(row_num)
         col_name = x_name + y_name + w_name
 
+        self._bool_num = (1 + len(y_name) + len(w_name))
+
         self.make_objective(col_name, w_name)
+
+        self.lower_bounds = np.zeros([1, len(col_name)]).astype(int)
+        self.upper_bounds = np.ones([1, len(col_name)]).astype(int) * np.inf
+        # bool param numbers
+        # y0 + yn + wn
+        self._bool_num = np.where(np.in1d(self.f.columns.values, y_name))
+        self.upper_bounds[0, self._bool_num] = 1
+
         self.int_constraints = self.make_int_constraints(y_name)
 
         # data_eq = np.zeros([row_num + 1, len(col_name)]).astype(int)

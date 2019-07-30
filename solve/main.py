@@ -1,13 +1,8 @@
-from input.input import gtw_pos, obj_pos, sta_pos
-from input.input import coverage, link_distance
-from input.input import gtw_lim, obj_lim, sta_lim
-from input.input import problem
-
+from problem.input import problem
 
 from solve.network import Graph
 from lin_prog.ilp_matrix import ILPMatrix
 from lin_prog.milp_solver import solve_milp_problem
-from solve.draw import draw_ilp_graph
 from lin_prog.lp_matrix import LPMatrix
 from lin_prog.lp_solver import solve_lp_problem
 
@@ -17,16 +12,18 @@ from solve.draw import draw_ilp_graph
 
 import pandas as pd
 
+import time
 
-G = Graph(gtw_pos, obj_pos, sta_pos, coverage, link_distance,
-          gtw_lim, obj_lim, sta_lim,)
+start_time = time.time()
+
+G = Graph()
 G.create_graph()
 
 if problem is 'ILP':
     M = ILPMatrix(G)
     M.create_matrix()
     y_name = M.get_solution_col_name()
-    # draw_graph(G, gtw_pos, obj_pos, sta_pos)
+    draw_input_data()
     x = solve_milp_problem(M.f.values,
                            M.int_constraints,
                            M.ineq_array.values,
@@ -39,12 +36,13 @@ if problem is 'ILP':
     solution = pd.Series(x, index=M.f.columns.values)
     placed_station = solution[y_name].values
     placed_station.tolist()
-    draw_ilp_graph(G, gtw_pos, obj_pos, sta_pos, placed_station)
+    draw_ilp_graph(G, placed_station)
 
 elif problem is 'LP':
-    draw_input_data(gtw_pos, obj_pos, sta_pos)
+    # to place objects, stations and gateway on coordinate plane
+    draw_input_data()
 
-    M = LPMatrix(G, gtw_lim, obj_lim, sta_lim)
+    M = LPMatrix(G)
     M.create_matrix()
     res = solve_lp_problem(M.f.values,
                            M.ineq_array.values,
@@ -55,6 +53,9 @@ elif problem is 'LP':
                            M.upper_bounds)
 
     solution = pd.Series(res.x, index=M.eq_array.columns.values)
-    draw_lp_graph(G, gtw_pos, obj_pos, sta_pos,)
+    draw_lp_graph(G)
 
-stop_debug_point = 'True'
+print("--- %.2f seconds ---" % (time.time() - start_time))
+
+""""
+to correct upper bounds"""

@@ -1,3 +1,5 @@
+from problem.input import gtw_pos, obj_pos, sta_pos
+
 import networkx as nx
 import matplotlib.pyplot as plt
 import itertools
@@ -9,24 +11,24 @@ def get_coordinates(position):
     return x, y
 
 
-def draw_input_data(g_p, o_p, s_p,):
+def draw_input_data():
     plt.close()
     fig = plt.gcf()
     ax = fig.gca()
-    g_x, g_y = get_coordinates(g_p)
+    g_x, g_y = get_coordinates(gtw_pos)
     plt.plot(g_x, g_y, color='r', marker='s', markersize=20, linestyle='')
-    [plt.annotate(i, xy=g_p[i], xytext=g_p[i], ha='center', va='center',
-                  color='w') for i in g_p]
+    [plt.annotate(i, xy=gtw_pos[i], xytext=gtw_pos[i], ha='center', va='center',
+                  color='w') for i in gtw_pos]
 
-    o_x, o_y = get_coordinates(o_p)
+    o_x, o_y = get_coordinates(obj_pos)
     plt.plot(o_x, o_y, color='b', marker='o', markersize=20, linestyle='')
-    [plt.annotate(i, xy=o_p[i], xytext=o_p[i], ha='center', va='center',
-                  color='w') for i in o_p]
+    [plt.annotate(i, xy=obj_pos[i], xytext=obj_pos[i], ha='center', va='center',
+                  color='w') for i in obj_pos]
 
-    s_x, s_y = get_coordinates(s_p)
+    s_x, s_y = get_coordinates(sta_pos)
     plt.plot(s_x, s_y, color='#FF9999', marker='o', markersize=20, linestyle='')
-    [plt.annotate(i, xy=s_p[i], xytext=s_p[i], ha='center', va='center',
-                  color='w') for i in s_p]
+    [plt.annotate(i, xy=sta_pos[i], xytext=sta_pos[i], ha='center', va='center',
+                  color='w') for i in sta_pos]
 
     ax.axis('equal')
     plt.grid()
@@ -58,24 +60,25 @@ def prepare_graph_for_draw(graph, s_p, placed_sta):
     return [draw_graph_node, pos, labels, sta, cov]
 
 
-def draw_ilp_graph(graph, g_p, o_p, s_p, placed_sta):
+def draw_ilp_graph(graph, placed_sta):
     """
     Draw network graph
     :param graph:  received graph of objects and stations
-    :param g_p: gateway position
-    :param o_p: object position
-    :param s_p: station position
     :param placed_sta: placed station selectors after solving the problem
     :return: ILP problem graph
     """
-    draw_g_node, pos, labels, sta, cov = prepare_graph_for_draw(graph, s_p,
+
+    draw_g_node, pos, labels, sta, cov = prepare_graph_for_draw(graph,
+                                                                graph.s_p,
                                                                 placed_sta)
+    g_list = list(graph.g_p.keys())
+    o_list = list(graph.o_p.keys())
 
     nx.draw_networkx_nodes(draw_g_node, pos,
-                           nodelist=g_p.keys(), node_shape='s',
+                           nodelist=g_list, node_shape='s',
                            node_color='r', linewidths=3)
     nx.draw_networkx_nodes(draw_g_node, pos,
-                           nodelist=o_p.keys(), node_shape='o',
+                           nodelist=o_list, node_shape='o',
                            node_color='b', linewidths=3)
     nx.draw_networkx_nodes(draw_g_node, pos,
                            nodelist=sta, node_shape='^',
@@ -95,18 +98,15 @@ def draw_ilp_graph(graph, g_p, o_p, s_p, placed_sta):
     plt.show()
 
 
-def draw_lp_graph(graph, gtw_pos, obj_pos, sta_pos):
+def draw_lp_graph(graph):
     """
     Draw network graph of LP problem
     :param graph:  received graph of objects and stations
-    :param gtw_pos: gateway position
-    :param obj_pos: object position
-    :param sta_pos: station position
     :return: LP problem graph
     """
-    g_list = list(gtw_pos.keys())
-    o_list = list(obj_pos.keys())
-    s_list = list(sta_pos.keys())
+    g_list = list(graph.g_p.keys())
+    o_list = list(graph.o_p.keys())
+    s_list = list(graph.s_p.keys())
 
     nx.draw_networkx_nodes(graph.G, graph.pos,
                            nodelist=g_list, node_shape='s',
