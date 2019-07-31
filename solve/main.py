@@ -36,7 +36,7 @@ if problem is 'ILP':
     solution = pd.Series(x, index=M.f.columns.values)
     placed_station = solution[y_name].values
     placed_station.tolist()
-    draw_ilp_graph(G, placed_station)
+    draw_ilp_graph(G, placed_station, y_name)
 
 elif problem is 'LP':
     # to place objects, stations and gateway on coordinate plane

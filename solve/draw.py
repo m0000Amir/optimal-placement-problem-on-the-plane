@@ -40,13 +40,15 @@ def prepare_graph_for_draw(graph, s_p, placed_sta):
     draw_graph_node = graph.G.copy()
 
     sta_node = graph.s_key
-    cov_sta = graph.cov * len(list(s_p.keys()))
-    cov_sta.sort()
+    # cov_sta = graph.cov * len(list(s_p.keys()))
+    # cov_sta.sort()
+    cov_sta = graph.coverage.values()
+
+    s = graph.s_draw * len(graph.cov)
 
     sta = list(itertools.compress(graph.s_key, placed_sta))
     cov = list(itertools.compress(cov_sta, placed_sta))
-    sta_name = list(
-        itertools.compress(list(s_p.keys()) * len(graph.cov), placed_sta))
+    sta_name = list(itertools.compress(s, placed_sta))
 
     remote_node = [i for i in sta_node if i not in sta]
 
@@ -60,7 +62,7 @@ def prepare_graph_for_draw(graph, s_p, placed_sta):
     return [draw_graph_node, pos, labels, sta, cov]
 
 
-def draw_ilp_graph(graph, placed_sta):
+def draw_ilp_graph(graph, placed_sta, y):
     """
     Draw network graph
     :param graph:  received graph of objects and stations
@@ -87,6 +89,8 @@ def draw_ilp_graph(graph, placed_sta):
                            arrowsize=20, edge_color='b')
 
     nx.draw_networkx_labels(draw_g_node, pos, labels=labels, font_color='w')
+    station = list(itertools.compress(y, placed_sta))
+    plt.title(station)
     fig = plt.gcf()
     ax = fig.gca()
     for i in range(len(sta)):
@@ -96,6 +100,7 @@ def draw_ilp_graph(graph, placed_sta):
     ax.axis('equal')
     plt.grid()
     plt.show()
+    a=1
 
 
 def draw_lp_graph(graph):
