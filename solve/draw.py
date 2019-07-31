@@ -44,7 +44,7 @@ def prepare_graph_for_draw(graph, s_p, placed_sta):
     # cov_sta.sort()
     cov_sta = graph.coverage.values()
 
-    s = graph.s_draw * len(graph.cov)
+    s = graph.s_origin * len(graph.cov)
 
     sta = list(itertools.compress(graph.s_key, placed_sta))
     cov = list(itertools.compress(cov_sta, placed_sta))

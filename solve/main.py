@@ -33,7 +33,7 @@ if problem is 'ILP':
                            M.lower_bounds,
                            M.upper_bounds)
 
-    solution = pd.Series(x, index=M.f.columns.values)
+    solution = pd.Series(x, index=M.f.columns.values).T
     placed_station = solution[y_name].values
     placed_station.tolist()
     draw_ilp_graph(G, placed_station, y_name)

@@ -134,12 +134,27 @@ class ILPMatrix:
     #         self.make_eq_for_y(row + i, y_name, self.ineq_array)
     #         self.ineq_b[row + i] = 1
 
-    def make_eq_for_var_param(self, row, y):
+    def make_eq_for_var_param(self, row1, y):
+        """
+
+        :param row1:condition columns that a station of the same type can be
+        used only once. After row2: columns of the condition that only one
+        station can be located at the location
+        :param y: y name
+        :return:
+        """
         for i in range(0, len(self.graph.cov)):
             y_name = [y[j+i*self._splacenum] for j in range(0, self._splacenum)]
 
-            self.make_eq_for_y(row + i, y_name, self.ineq_array)
-            self.ineq_b[row + i] = 1
+            self.make_eq_for_y(row1 + i, y_name, self.ineq_array)
+            self.ineq_b[row1 + i] = 1
+        row2 = row1 + i
+        for k in range(0, len(self.graph.s_origin)):
+            y_name = [y[k + j * self._splacenum] for j in
+                      range(0, len(self.graph.cov))]
+            self.make_eq_for_y(row2 + k + 1, y_name, self.ineq_array)
+            self.ineq_b[row2 + k + 1] = 1
+            a = 1
 
     def make_equality(self, row, col, y):
 
@@ -170,7 +185,8 @@ class ILPMatrix:
     def make_inequality(self, row, col, y):
         if len(self.graph.cov) is not 1:
             # additional conditions for stations with various parameters
-            data_row = (row + len(self.graph.cov))
+            # data_row = (row + len(self.graph.cov))
+            data_row = (row + len(self.graph.cov) + len(self.graph.s_origin))
         else:
             data_row = row
         data_ineq = np.zeros([data_row, len(col)]).astype(int)
@@ -183,6 +199,7 @@ class ILPMatrix:
             self.make_eq_for_y(i, 'y' + str(i), self.ineq_array, coef)
         if len(self.graph.cov) is not 1:
             self.make_eq_for_var_param(row, y)
+        a = 1
 
     def create_matrix(self):
         """
@@ -235,6 +252,7 @@ class ILPMatrix:
         #     ineq_row_size = row_num
 
         self.make_inequality(row_num, col_name, y_name)
+        debug = 'a'
 
     def get_solution_col_name(self):
         row_num = (len(self.graph.g_key) + len(self.graph.o_key) +

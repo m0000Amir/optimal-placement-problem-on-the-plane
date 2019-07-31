@@ -24,7 +24,7 @@ class Graph:
         self.limit = limit
         self.g_lim = gtw_lim
         self.o_lim = obj_lim
-        # self.s_lim = sta_lim
+        self.s_lim = sta_lim
 
         self.G = nx.DiGraph()
         self.s_lim = None
@@ -33,7 +33,7 @@ class Graph:
         self.link_distance = None
         self.adj_matrix = None
 
-        self.s_draw = list(self.s_p.keys())
+        self.s_origin = list(self.s_p.keys())
 
     def check_o2g_path(self):
         gateway = self.g_key[0]
