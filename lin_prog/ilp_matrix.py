@@ -154,7 +154,6 @@ class ILPMatrix:
                       range(0, len(self.graph.cov))]
             self.make_eq_for_y(row2 + k + 1, y_name, self.ineq_array)
             self.ineq_b[row2 + k + 1] = 1
-            a = 1
 
     def make_equality(self, row, col, y):
 
@@ -199,7 +198,6 @@ class ILPMatrix:
             self.make_eq_for_y(i, 'y' + str(i), self.ineq_array, coef)
         if len(self.graph.cov) is not 1:
             self.make_eq_for_var_param(row, y)
-        a = 1
 
     def create_matrix(self):
         """

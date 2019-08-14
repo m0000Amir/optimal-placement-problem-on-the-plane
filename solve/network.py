@@ -3,7 +3,7 @@ import math
 
 from problem.input import gtw_pos, obj_pos, sta_pos
 from problem.input import coverage, link_distance, limit
-from problem.input import gtw_lim, obj_lim, sta_lim
+from problem.input import gtw_lim, obj_lim#, sta_lim
 
 import networkx as nx
 
@@ -24,7 +24,7 @@ class Graph:
         self.limit = limit
         self.g_lim = gtw_lim
         self.o_lim = obj_lim
-        self.s_lim = sta_lim
+        # self.s_lim = sta_lim
 
         self.G = nx.DiGraph()
         self.s_lim = None
