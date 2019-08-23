@@ -174,7 +174,7 @@ class ILPMatrix:
             if i == row:
                 self.make_eq_for_y(i, y, self.eq_array)
                 if len(self.graph.cov) is 1:
-                    self.eq_b[i] = len(self.graph.coverage)
+                    self.eq_b[i] = self.graph.m
                 else:
                     self.eq_b[i] = len(self.graph.cov)
 
